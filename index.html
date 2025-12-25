@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大猫像素食堂 8-Bit Deluxe</title>
+    <style>
+        :root {
+            --pixel-bg: #1a1a2e;      /* 更深的背景色，让粒子更明显 */
+            --pixel-card: #ecf0f1;
+            --pixel-primary: #e67e22;
+            --pixel-border: #000000;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--pixel-bg);
+            font-family: 'Courier New', 'Microsoft YaHei', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 粒子画布层 */
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* 放在背景层 */
+        }
+
+        /* 强化像素风卡片 */
+        .card {
+            background: var(--pixel-card);
+            width: 90%;
+            max-width: 400px;
+            padding: 2.5rem;
+            border: 6px solid var(--pixel-border);
+            box-shadow: 12px 12px 0px rgba(0,0,0,0.4);
+            text-align: center;
+            position: relative;
+            z-index: 10; /* 确保在粒子上方 */
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            color: var(--pixel-border);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .display-area {
+            width: 100%;
+            height: 250px;
+            background: #fff;
+            border: 4px solid var(--pixel-border);
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #result-img {
+            width: 160px;
+            height: 160px;
+            object-fit: cover;
+            border: 4px solid var(--pixel-border);
+            display: none;
+            image-rendering: pixelated;
+        }
+
+        #result-text {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #d35400;
+            margin-top: 15px;
+        }
+
+        button.main-btn {
+            background: var(--pixel-primary);
+            color: white;
+            border: 4px solid var(--pixel-border);
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 6px 6px 0px var(--pixel-border);
+            position: relative;
+        }
+
+        button.main-btn:active {
+            top: 4px;
+            left: 4px;
+            box-shadow: 0px 0px 0px var(--pixel-border);
+        }
+
+        #mute-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #fff;
+            border: 4px solid var(--pixel-border);
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 4px 4px 0px var(--pixel-border);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="particle-canvas"></canvas>
+
+    <button id="mute-btn" onclick="toggleMute()">🔊</button>
+
+    <div class="card">
+        <h1>CAT CANTEEN</h1>
+        <div class="display-area">
+            <img id="result-img" src="" alt="food">
+            <div id="result-text">INSERT COIN</div>
+        </div>
+        <button class="main-btn" onclick="startRoll()">START ROLL!</button>
+    </div>
+
+    <audio id="audio-tension" src="tension.mp3" loop preload="auto"></audio>
+    <audio id="audio-success" src="success.mp3" preload="auto"></audio>
+
+    <script>
+        // 1. 基础配置 [cite: 18, 19, 20]
+        const options = [
+            { name: "拉面", img: "lamian.png" }, { name: "汉堡", img: "hanbao.png" },
+            { name: "火锅", img: "huoguo.png" }, { name: "寿司", img: "shousi.png" },
+            { name: "炸鸡", img: "zhaji.png" }, { name: "土豆", img: "tudou.png" },
+            { name: "烧烤", img: "shaokao.png" }, { name: "沙拉", img: "shala.png" },
+            { name: "披萨", img: "pisa.png" }, { name: "牛肉饭", img: "niuroufan.png" },
+            { name: "牛排", img: "niupai.png" }, { name: "螺蛳粉", img: "luosifen.png" },
+            { name: "烤鱼", img: "kaoyu.png" }, { name: "烤鸭", img: "kaoya.png" },
+            { name: "TACO", img: "juanbing.png" }, { name: "海鲜", img: "haixian.png" },
+            { name: "咖喱饭", img: "galifan.png" }, { name: "炒面", img: "chaomian.png" },
+            { name: "猪肚鸡", img: "zhuduji.png" }, { name: "煲仔饭", img: "baozaifan.png" },
+            { name: "毛血旺", img: "maoxuewang.png" }, { name: "麻婆豆腐", img: "mapodoufu.png" },
+            { name: "土耳其烤肉", img: "tuerqikaorou.png" }, { name: "炒饭", img: "chaofan.png" },
+            { name: "大肉包", img: "baozi.png" }
+        ];
+
+        // 2. 像素粒子背景逻辑
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 4 + 2; // 像素块大小
+                this.speedY = -(Math.random() * 1 + 0.5); // 向上漂浮
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            update() {
+                this.y += this.speedY;
+                if (this.y < -10) this.y = canvas.height + 10; // 循环
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                // 绘制方形像素粒子
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        function initParticles() {
+            for (let i = 0; i < 60; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        initParticles();
+        animate();
+
+        // 3. 核心抽奖逻辑 [cite: 22, 23, 24, 26, 27, 28, 29, 30]
+        let isRolling = false;
+        let isMuted = false;
+        const tensionAudio = document.getElementById('audio-tension');
+        const successAudio = document.getElementById('audio-success');
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            tensionAudio.muted = isMuted;
+            successAudio.muted = isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? "🔇" : "🔊";
+        }
+
+        function startRoll() {
+            if (isRolling) return;
+            isRolling = true;
+            successAudio.pause();
+            successAudio.currentTime = 0;
+            tensionAudio.play();
+
+            let count = 0;
+            const timer = setInterval(() => {
+                const random = options[Math.floor(Math.random() * options.length)];
+                document.getElementById('result-text').innerText = random.name;
+                const img = document.getElementById('result-img');
+                img.src = random.img;
+                img.style.display = "block";
+                count++;
+                if (count >= 50) {
+                    clearInterval(timer);
+                    isRolling = false;
+                    tensionAudio.pause();
+                    tensionAudio.currentTime = 0;
+                    successAudio.play();
+                    document.getElementById('result-text').innerText = "✨ " + random.name + " ✨";
+                }
+            }, 100);
+        }
+    </script>
+</body>
+</html>
