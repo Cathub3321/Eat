@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大猫像素食堂 - 长屏版</title>
+    <title>今天吃点啥</title>
     <style>
         :root {
             --pixel-bg: #1a1a2e;      
@@ -23,8 +23,8 @@
 
         .card {
             background: var(--pixel-card);
-            width: 90%;
-            max-width: 420px; /* 稍微调宽一点 */
+            width: 95%;
+            max-width: 500px; /* 进一步增加卡片整体宽度 */
             padding: 2rem;
             border: 6px solid var(--pixel-border);
             box-shadow: 12px 12px 0px rgba(0,0,0,0.4);
@@ -34,17 +34,17 @@
         }
 
         h1 {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             color: var(--pixel-border);
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             letter-spacing: 2px;
         }
 
-        /* --- 修改点：显示区域变为长方形 --- */
+        /* --- 窗口扩大：保持长方形比例 --- */
         .display-area {
             width: 100%;
-            height: 180px; /* 从 250px 减小到 180px，形成长方形 */
-            background: #fff;
+            height: 280px; /* 显著增加高度 */
+            background: #222; /* 改为深色背景，这样不裁剪图片时，留白处会显得像屏幕边缘 */
             border: 4px solid var(--pixel-border);
             margin-bottom: 20px;
             display: flex;
@@ -55,22 +55,21 @@
             overflow: hidden;
         }
 
-        /* --- 修改点：图片适配长方形容器 --- */
         #result-img {
-            width: 100%;   /* 宽度填满长方形 */
-            height: 130px; /* 调整高度 */
-            object-fit: cover; /* 关键：裁剪图片以填满长方形窗口而不变形 */
-            border-bottom: 4px solid var(--pixel-border);
+            width: 95%;   
+            height: 200px; /* 增加图片显示区域高度 */
+            /* 关键修改：contain 确保图片完整显示，不被裁剪 */
+            object-fit: contain; 
             display: none;
             image-rendering: pixelated;
         }
 
         #result-text {
-            font-size: 1.2rem;
+            font-size: 1.5rem; /* 调大文字 */
             font-weight: bold;
-            color: #d35400;
+            color: #ff9f43; /* 亮橙色在深色背景下更显眼 */
             margin-top: 10px;
-            height: 30px; /* 给文字留出固定位置 */
+            text-shadow: 2px 2px 0px #000;
         }
 
         button.main-btn {
@@ -78,8 +77,8 @@
             color: white;
             border: 4px solid var(--pixel-border);
             width: 100%;
-            padding: 15px;
-            font-size: 1.2rem;
+            padding: 18px; /* 按钮也调大一点，更好点 */
+            font-size: 1.4rem;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 6px 6px 0px var(--pixel-border);
@@ -91,8 +90,8 @@
         #mute-btn {
             position: absolute; top: 20px; right: 20px;
             background: #fff; border: 4px solid var(--pixel-border);
-            width: 55px; height: 55px; cursor: pointer;
-            font-size: 1.8rem; display: flex; justify-content: center;
+            width: 60px; height: 60px; cursor: pointer;
+            font-size: 2rem; display: flex; justify-content: center;
             align-items: center; box-shadow: 4px 4px 0px var(--pixel-border);
             z-index: 100;
         }
@@ -104,7 +103,7 @@
     <button id="mute-btn" onclick="toggleMute()">🔊</button>
 
     <div class="card">
-        <h1>CAT CANTEEN</h1>
+        <h1>CAT CANTEEN 8-BIT</h1>
         <div class="display-area">
             <img id="result-img" src="" alt="food">
             <div id="result-text">READY?</div>
@@ -132,7 +131,6 @@
             { name: "大肉包", img: "baozi.png" }
         ];
 
-        // 粒子背景逻辑
         const canvas = document.getElementById('particle-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
@@ -145,7 +143,7 @@
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
                 this.size = Math.random() * 4 + 2;
-                this.speedY = -(Math.random() * 1 + 0.5);
+                this.speedY = -(Math.random() * 0.8 + 0.3);
                 this.opacity = Math.random() * 0.5 + 0.2;
             }
             update() { this.y += this.speedY; if (this.y < -10) this.y = canvas.height + 10; }
@@ -164,7 +162,6 @@
         }
         initParticles(); animate();
 
-        // 抽奖逻辑
         let isRolling = false;
         let isMuted = false;
         const tensionAudio = document.getElementById('audio-tension');
@@ -206,3 +203,4 @@
     </script>
 </body>
 </html>
+
